@@ -29,7 +29,7 @@ resource "aws_launch_template" "worker-node-launch-template" {
   }
 
   image_id      = var.image_id
-  instance_type = "t2.micro"
+  instance_type = instance_size
   user_data = base64encode(<<-EOF
 MIME-Version: 1.0
 Content-Type: multipart/mixed; boundary="==MYBOUNDARY=="
