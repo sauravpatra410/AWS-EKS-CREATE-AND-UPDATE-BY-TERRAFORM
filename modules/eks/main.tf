@@ -5,7 +5,10 @@ resource "aws_eks_cluster" "eks" {
   version  = var.cluster_version
 
   vpc_config {
-    subnet_ids = [var.public_subnet_az1_id, var.public_subnet_az2_id]
+    subnet_ids = [
+      var.public_subnet_az1_id,
+      var.public_subnet_az2_id
+    ]
   }
 
   tags = {
@@ -14,12 +17,13 @@ resource "aws_eks_cluster" "eks" {
   }
 }
 
-# Using Data Source to get all Avalablility Zones in Region
+# Using Data Source to get all Availability Zones in Region
 data "aws_availability_zones" "available_zones" {}
 
 # Creating Launch Template for Worker Nodes
 resource "aws_launch_template" "worker-node-launch-template" {
   name = "worker-node-launch-template"
+
   block_device_mappings {
     device_name = "/dev/sdf"
 
@@ -30,19 +34,16 @@ resource "aws_launch_template" "worker-node-launch-template" {
 
   image_id      = var.image_id
   instance_type = var.instance_size
+
   user_data = base64encode(<<-EOF
-MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="==MYBOUNDARY=="
---==MYBOUNDARY==
-Content-Type: text/x-shellscript; charset="us-ascii"
-#!/bin/bash
-/etc/eks/bootstrap.sh prod-cluster
---==MYBOUNDARY==--\
+    #!/bin/bash
+    /etc/eks/bootstrap.sh ${var.cluster_name}
   EOF
-)
+  )
 
-
-  vpc_security_group_ids = [var.eks_security_group_id]
+  vpc_security_group_ids = [
+    var.eks_security_group_id
+  ]
 
   tag_specifications {
     resource_type = "instance"
@@ -58,7 +59,10 @@ resource "aws_eks_node_group" "node-grp" {
   cluster_name    = aws_eks_cluster.eks.name
   node_group_name = "Worker-Node-Group"
   node_role_arn   = var.worker_arn
-  subnet_ids      = [var.public_subnet_az1_id, var.public_subnet_az2_id]
+  subnet_ids = [
+    var.public_subnet_az1_id,
+    var.public_subnet_az2_id
+  ]
 
   launch_template {
     name    = aws_launch_template.worker-node-launch-template.name
@@ -80,6 +84,7 @@ resource "aws_eks_node_group" "node-grp" {
   }
 }
 
+# Defining local variable for EKS Addons
 locals {
   eks_addons = {
     "vpc-cni" = {
@@ -102,3 +107,4 @@ resource "aws_eks_addon" "example" {
   addon_version               = each.value.version
   resolve_conflicts_on_update = each.value.resolve_conflicts
 }
+
